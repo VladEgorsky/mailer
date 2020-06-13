@@ -14,10 +14,9 @@ use yii\base\Model;
  */
 class LoginForm extends Model
 {
-    public $username;
+    public $providerId;
+    public $email;
     public $password;
-
-    protected $_user;
 
     /**
      * @return array the validation rules.
@@ -25,8 +24,25 @@ class LoginForm extends Model
     public function rules()
     {
         return [
-            [['username', 'password'], 'required'],
+            [['providerId', 'email', 'password'], 'required'],
+            ['providerId', 'integer'],
+            ['providerId', 'in', 'range' => Provider::getIds()],
+            [['email', 'password'], 'string'],
+            [['email', 'password'], 'trim'],
+            ['email', 'email'],
             ['password', 'validatePassword'],
+        ];
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function attributeLabels()
+    {
+        return [
+            'providerId' => 'Провайдер',
+            'email' => 'EMail',
+            'password' => 'Пароль',
         ];
     }
 
@@ -39,36 +55,25 @@ class LoginForm extends Model
      */
     public function validatePassword($attribute, $params)
     {
-        if (!$this->hasErrors()) {
-            $user = $this->getUser();
-
-            if (!$user || !$user->validatePassword($this->password)) {
-                $this->addError($attribute, 'Incorrect username or password.');
-            }
-        }
+//        if (!$this->hasErrors()) {
+//            $user = $this->getUser();
+//
+//            if (!$user || !$user->validatePassword($this->password)) {
+//                $this->addError($attribute, 'Incorrect email or password.');
+//            }
+//        }
     }
 
     /**
-     * Logs in a user using the provided username and password.
+     * Logs in a user using the provided email and password.
      * @return bool whether the user is logged in successfully
      */
     public function login()
     {
-        if ($this->validate()) {
-            return Yii::$app->user->login($this->getUser(), $this->rememberMe ? 3600*24*30 : 0);
-        }
-        return false;
-    }
-
-    /**
-     * @return User|null
-     */
-    public function getUser()
-    {
-        if ($this->_user === false) {
-            $this->_user = new User();
+        if (!$this->validate()) {
+            return false;
         }
 
-        return $this->_user;
+        return Yii::$app->user->login(User::findIdentity(100), 3600);
     }
 }

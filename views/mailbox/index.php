@@ -1,0 +1,5 @@
+<?php
+
+?>
+
+Mailbox index.php

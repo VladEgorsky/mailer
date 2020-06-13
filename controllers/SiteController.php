@@ -6,10 +6,12 @@ use Yii;
 use yii\filters\AccessControl;
 use yii\web\Controller;
 use yii\web\Response;
-use yii\filters\VerbFilter;
 use app\models\LoginForm;
-use app\models\ContactForm;
 
+/**
+ * Class SiteController
+ * @package app\controllers
+ */
 class SiteController extends Controller
 {
     /**
@@ -27,12 +29,6 @@ class SiteController extends Controller
                         'allow' => true,
                         'roles' => ['@'],
                     ],
-                ],
-            ],
-            'verbs' => [
-                'class' => VerbFilter::className(),
-                'actions' => [
-                    'logout' => ['post'],
                 ],
             ],
         ];
@@ -63,13 +59,14 @@ class SiteController extends Controller
 
         $model = new LoginForm();
         if ($model->load(Yii::$app->request->post()) && $model->login()) {
+            $a = 5;
             return $this->goBack();
         }
 
+        $this->layout = 'main-login';
         $model->password = '';
-        return $this->render('login', [
-            'model' => $model,
-        ]);
+
+        return $this->render('login', ['model' => $model]);
     }
 
     /**
@@ -80,28 +77,6 @@ class SiteController extends Controller
     public function actionLogout()
     {
         Yii::$app->user->logout();
-
         return $this->goHome();
-    }
-
-    public function actionMailbox()
-    {
-
-
-        return $this->render('mailbox');
-    }
-
-    public function actionMessage()
-    {
-
-
-        return $this->render('message');
-    }
-
-    public function actionCompose()
-    {
-
-
-        return $this->render('compose');
     }
 }

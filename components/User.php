@@ -12,15 +12,29 @@ use yii\base\NotSupportedException;
  */
 class User extends \yii\base\BaseObject implements \yii\web\IdentityInterface
 {
-    public $id = 1;
-    public $authKey = 'test-admin-authkey';
+    public $id;
+    public $username;
+    public $password;
+    public $authKey;
+    public $accessToken;
+
+    private static $users = [
+        '100' => [
+            'id' => '100',
+            'username' => 'admin',
+            'password' => 'admin',
+            'authKey' => 'test100key',
+            'accessToken' => '100-token',
+        ],
+    ];
+
 
     /**
      * {@inheritdoc}
      */
     public static function findIdentity($id)
     {
-        throw new NotSupportedException();
+        return isset(self::$users[$id]) ? new static(self::$users[$id]) : null;
     }
 
     /**
