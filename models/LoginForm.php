@@ -2,15 +2,14 @@
 
 namespace app\models;
 
+use app\components\Mailer;
 use app\components\User;
 use Yii;
 use yii\base\Model;
 
 /**
- * LoginForm is the model behind the login form.
- *
- * @property User|null $_user This property is read-only.
- *
+ * Class LoginForm is the model behind the login form.
+ * @package app\models
  */
 class LoginForm extends Model
 {
@@ -19,7 +18,7 @@ class LoginForm extends Model
     public $password;
 
     /**
-     * @return array the validation rules.
+     * {@inheritdoc}
      */
     public function rules()
     {
@@ -30,7 +29,7 @@ class LoginForm extends Model
             [['email', 'password'], 'string'],
             [['email', 'password'], 'trim'],
             ['email', 'email'],
-            ['password', 'validatePassword'],
+            ['password', 'validateCredentials'],
         ];
     }
 
@@ -47,33 +46,33 @@ class LoginForm extends Model
     }
 
     /**
-     * Validates the password.
-     * This method serves as the inline validation for password.
-     *
-     * @param string $attribute the attribute currently being validated
-     * @param array $params the additional name-value pairs given in the rule
+     * Выбираем данные с почтового сервера и сохраняем их в
+     * Yii::$app->mailer->mailbox[header] & mailbox[data]
      */
-    public function validatePassword($attribute, $params)
+    public function validateCredentials()
     {
-//        if (!$this->hasErrors()) {
-//            $user = $this->getUser();
-//
-//            if (!$user || !$user->validatePassword($this->password)) {
-//                $this->addError($attribute, 'Incorrect email or password.');
-//            }
-//        }
+        /** @var Mailer $mailer */
+        $mailer = Yii::$app->mailer;
+        $credentials = (object) [
+            'imapServer' => Provider::getImapServer($this->providerId),
+            'email' => $this->email,
+            'password' => $this->password,
+        ];
+
+        $mailer->setCredentials($credentials);
+        $response = $mailer->getDataFromServer();
+
+        if (!empty($response['errorMessage'])) {
+            $this->addError('password', $response['errorMessage']);
+        }
     }
 
     /**
-     * Logs in a user using the provided email and password.
+     * Logs in a user using the provided credentials
      * @return bool whether the user is logged in successfully
      */
     public function login()
     {
-        if (!$this->validate()) {
-            return false;
-        }
-
-        return Yii::$app->user->login(User::findIdentity(100), 3600);
+        return Yii::$app->user->login(User::findIdentity(1));
     }
 }
