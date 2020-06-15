@@ -1,3 +1,9 @@
+<?php
+    $showCloseWindowButton = in_array(Yii::$app->controller->route, [
+        'mailbox/message', 'mailbox/compose'
+    ]);
+?>
+
 <aside class="main-sidebar">
 
     <section class="sidebar">
@@ -34,7 +40,12 @@
 //                    ['label' => 'Gii', 'icon' => 'file-code-o', 'url' => ['/gii']],
 //                    ['label' => 'Debug', 'icon' => 'dashboard', 'url' => ['/debug']],
                     ['label' => 'Login', 'icon' => 'sign-in', 'url' => ['site/login'], 'visible' => Yii::$app->user->isGuest],
-                    ['label' => 'Выйти', 'icon' => 'sign-out', 'url' => ['site/logout'], 'visible' => !Yii::$app->user->isGuest],
+                    ['label' => 'Выйти', 'icon' => 'sign-out', 'url' => ['#'],
+                        'visible' => !Yii::$app->user->isGuest && $showCloseWindowButton, 'options' => [
+                            'onclick' => 'window.close(); return false;',
+                    ]],
+                    ['label' => 'Выйти', 'icon' => 'sign-out', 'url' => ['site/logout'],
+                        'visible' => !Yii::$app->user->isGuest && !$showCloseWindowButton],
                 ],
             ]
         ) ?>

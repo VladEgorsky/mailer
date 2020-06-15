@@ -2,8 +2,6 @@
 
 namespace app\components;
 
-use app\models\LoginForm;
-use app\models\Provider;
 use PhpImap\Exceptions\ConnectionException;
 use PhpImap\Mailbox as ImapMailbox;
 use Yii;
@@ -45,100 +43,154 @@ use Yii;
 class Mailer extends \yii\swiftmailer\Mailer
 {
     /**
-     * Здесь хранятся данные для функции imap_open
-     * imapServer, email, password
+     * объект new ImapMailbox()
      *
-     * @var \stdClass
+     * @var object
      */
-    protected $credentials;
-
-    /**
-     * Ресурс создаваемый функцией imap_open
-     *
-     * @var resource
-     */
-    protected $imapResource;
+    protected $imapObject;
 
     /**
      * Каталог в папке @webroot для хранения вложенных файлов
      * @var string
      */
-    protected $attachmentsDir = DIRECTORY_SEPARATOR . 'uploads';
+    protected $attachmentsFolder = 'attachments';
 
     /**
-     * Здесь будем хранить выбранные данные для почтового ящика
-     * Header: [from, message_num, ... ]
-     * Data: [
+     * Здесь хранятся данные для функции imap_open
+     * imapServer, email, password
+     *
+     * @var \StdClass
+     */
+    protected $credentials;
+
+    /**
+     * Данные для почтового ящика: {from, message_num, ... }
+     *
+     * @var \StdClass
+     */
+    protected $mailboxHeader;
+
+    /**
+     * Данные для каждого сообщения в почтовом ящике: [
      *      [subject, from, reply_to, flagged, has_attachment, date ... ],
      *      [subject, from, reply_to, flagged, has_attachment, date ... ]
      * ]
+     * Ввиде массива чтобы использовать для ArrayDataProvider
      *
      * @var array
      */
-    protected $mailBox = [
-        'header' => [],
-        'data' => [],
-    ];
+    protected $mailboxData;
+
+    /**
+     * Mailer constructor.
+     * @param array $config
+     */
+    public function __construct($config = [])
+    {
+        $session = Yii::$app->session;
+        $this->credentials = $session->get('mailboxCredentials');
+        $this->mailboxHeader = $session->get('mailboxHeader');
+        $this->mailboxData = $session->get('mailboxData');
+
+        parent::__construct($config);
+    }
 
 
     /*******************************************************************************
      *                              Getters & Setters
      *
-     * @param \stdClass $odj
+     * @param \StdClass $obj
      */
-    public function setCredentials(\stdClass $odj)
+    public function setCredentials(\StdClass $obj)
     {
-        $this->credentials = $odj;
+        $this->credentials = $obj;
+        $this->mailboxHeader = $this->mailboxData = null;
     }
 
     /**
-     * @throws \PhpImap\Exceptions\InvalidParameterException
+     * @return \StdClass|null
      */
-    protected function setImapResource()
+    public function getCredentials()
     {
-        $c = $this->credentials;
-
-        $this->imapResource = new ImapMailbox(
-            $c->imapServer,                         // IMAP server and mailbox folder
-            $c->email,                              // Username for the before configured mailbox
-            $c->password,                           // Password for the before configured username
-            $this->getAttachmentsDir($c->email),    // Directory, where attachments will be saved (optional)
-            'UTF-8'                    // Server encoding (optional)
-        );
+        return $this->credentials ?? Yii::$app->session->get('mailboxCredentials');
     }
 
     /**
-     * @return resource
-     * @throws \PhpImap\Exceptions\InvalidParameterException
-     */
-    protected function getImapResource()
-    {
-        if (!$this->imapResource) {
-            $this->setImapResource();
-        }
-
-        return $this->imapResource;
-    }
-
-    /**
-     * @param string $email
-     * @param bool $createIfNotExist
+     * @param int $messageId
+     * @param string|null $email
      * @return string
      */
-    protected function getAttachmentsDir(string $email, bool $createIfNotExist = true)
+    protected function getAttachmentsDir(int $messageId, string $email = null): string
     {
-        $dir = Yii::getAlias('@webroot') . $this->attachmentsDir . DIRECTORY_SEPARATOR . $email;
+        if (!$email) {
+            $email = $this->credentials->email;
+        }
 
-        if ($createIfNotExist && !is_dir($dir)) {
-            mkdir($dir);
+        $dir = Yii::getAlias('@webroot') . DIRECTORY_SEPARATOR . $this->attachmentsFolder;
+        $dir .= DIRECTORY_SEPARATOR . $email . '-' . $messageId;
+
+        if (!is_dir($dir)) {
+            mkdir($dir, 0777, true);
         }
 
         return $dir;
     }
 
+    /**
+     * @throws \PhpImap\Exceptions\InvalidParameterException
+     */
+    protected function setImapObject()
+    {
+        $c = $this->getCredentials();
+
+        $this->imapObject = new ImapMailbox(
+            $c->imapServer,             // IMAP server and mailbox folder
+            $c->email,                  // Username for the before configured mailbox
+            $c->password,               // Password for the before configured username
+            null           // Directory, where attachments will be saved (optional)
+        );
+    }
+
+    /**
+     * @return object
+     * @throws \PhpImap\Exceptions\InvalidParameterException
+     */
+    protected function getImapObject()
+    {
+        if (!$this->imapObject) {
+            $this->setImapObject();
+        }
+
+        return $this->imapObject;
+    }
+
+    /**
+     * @return \stdClass|null
+     */
+    public function getMailboxHeader(): \stdClass
+    {
+        return $this->mailboxHeader ?? Yii::$app->session->get('mailboxHeader');
+    }
+
+    /**
+     * @param int|null $id
+     * @return array|mixed|null
+     */
+    public function getMailboxData(int $id = null)
+    {
+        $data = $this->mailboxData ?? Yii::$app->session->get('mailboxData');
+
+        if (!$data) {
+            return null;
+        }
+
+        return $id ? $data[$id] : $data;
+    }
+
 
     /*******************************************************************************
      *                               Public functions
+     * Выбираем данные для $this->>mailboxHeader & mailboxData и сохраняем их в сессию
      *
      * @return array|bool[]
      * @throws \PhpImap\Exceptions\InvalidParameterException
@@ -146,26 +198,28 @@ class Mailer extends \yii\swiftmailer\Mailer
     public function getDataFromServer()
     {
         try {
-            /** @var ImapMailbox $resource */
-            $resource = $this->getImapResource();
-            $resource->setAttachmentsIgnore(true);
+            /** @var ImapMailbox $imapObj */
+            $imapObj = $this->getImapObject();
+            $imapObj->setAttachmentsIgnore(true);
 
             // Date, Driver, Mailbox, Nmsgs, Recent
-            $this->mailBox['header'] = $resource->checkMailBox();
+            $this->mailboxHeader = $imapObj->checkMailBox();
 
             // Ids всех почтовых сообщений в ящике
             // http://php.net/manual/en/function.imap-search.php
-            $mailIds = $resource->searchMailbox('ALL');
+            $mailIds = $imapObj->searchMailbox('ALL');
 
             // Данные для mailBox['data]
-            $data = $resource->getMailsInfo($mailIds);
+            $data = $imapObj->getMailsInfo($mailIds);
             $this->setMailboxData($data);
 
-        } catch(ConnectionException $e) {
-            return [
-                'result' => false,
-                'errorMessage' => $e->getMessage(),
-            ];
+            // Сохраняем данные в сессию
+            $this->storeDataToSession();
+
+        } catch (ConnectionException $e) {
+            return ['errorMessage' => 'IMAP connection failed: '.$e->getMessage()];
+        } catch (\Exception $e) {
+            return ['errorMessage' => 'An error occured: '.$e->getMessage()];
         }
 
         return ['result' => true];
@@ -174,59 +228,85 @@ class Mailer extends \yii\swiftmailer\Mailer
     /**
      * Выбираем тело сообщения
      *
-     * @param int $uid
-     * @return string
-     * @throws \PhpImap\Exceptions\InvalidParameterException
+     * @param int $id
+     * @return mixed|string
      */
-    public function getMailBody(int $uid): string
+    public function getMessageBody(int $id)
     {
-        /** @var ImapMailbox $resource */
-        $resource = $this->getImapResource();
+        $body = Yii::$app->session->get('body_' . $id);
+        if ($body) {
+            return $body;
+        }
 
-        return $resource->getRawMail($uid);
+        try {
+            /** @var ImapMailbox $imapObj */
+            $imapObj = $this->getimapObject();
+            $data = $imapObj->getMail($id);
+            $attachments = $data->getAttachments();
+
+            $dir = $this->getAttachmentsDir($id);
+            foreach ($attachments as $attachment) {
+                $attachment->setFilePath($dir . DIRECTORY_SEPARATOR . $attachment->name);
+                $attachment->saveToDisk();
+            }
+
+            $body = $data->textHtml ?? $data->textPlain;
+            Yii::$app->session->set('body_' . $id, $body);
+
+            return $body;
+
+        } catch (ConnectionException $e) {
+            die('IMAP connection failed: '.$e->getMessage());
+        } catch (\Exception $e) {
+            die('An error occured: '.$e->getMessage());
+        }
     }
 
     /**
-     * @return array|mixed
+     * @param int $messageId
+     * @param string|null $email
+     * @return array|false
      */
-    public function getMailboxHeader()
+    public function getAttachedFiles(int $messageId, string $email = null)
     {
-        return $this->mailBox['header'];
+        $dir = $this->getAttachmentsDir($messageId, $email);
+        return glob($dir . DIRECTORY_SEPARATOR . '*.*');
     }
-
-    /**
-     * @return array|mixed
-     */
-    public function getMailboxData()
-    {
-        return $this->mailBox['data'];
-    }
-
 
     /*******************************************************************************
      *                               Protected functions
+     *
      * В параметре принимаем массив объектов.
      * В $this->mailBox['data'] конвертируем его в массив массивов.
      * Дополнительно выбираем инфу о наличии в сообщении вложений
      *
      * @param array $data
      * @return bool
+     * @throws \PhpImap\Exceptions\InvalidParameterException
      */
     protected function setMailboxData(array $data): bool
     {
         foreach ($data as $obj) {
-            $o = $this->getImapResource()->getMail($obj->uid);
-
-            // Получаем значение скрытого св-ва $o->hasAttachments
-            $rc = new \ReflectionClass($o);
-            $prop = $rc->getProperty('hasAttachments');
-            $prop->setAccessible(true);
-
             $arr = (array) $obj;
-            $arr['hasAttachments'] = $prop->getValue($o);
-            $this->mailBox['data'][$obj->uid] = $arr;
+            $o = $this->getimapObject()->getMail($obj->uid, false);
+            $arr['hasAttachments'] = $o->hasAttachments();
+            $arr['date'] = strtotime($arr['date']);
+
+            $this->mailboxData[$obj->uid] = $arr;
         }
 
         return true;
+    }
+
+    /**
+     * Сохраняем данные в сессию.
+     */
+    protected function storeDataToSession()
+    {
+        $session = Yii::$app->session;
+
+        $session->set('mailboxCredentials', $this->credentials);
+        $session->set('mailboxHeader', $this->mailboxHeader);
+        $session->set('mailboxData', $this->mailboxData);
     }
 }

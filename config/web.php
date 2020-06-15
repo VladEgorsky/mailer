@@ -13,6 +13,7 @@ $config = [
     ],
     'defaultRoute' => 'mailbox',
     'language' => 'ru-RU',
+    'timeZone' => 'Europe/Moscow',
     'components' => [
         'request' => [
             'cookieValidationKey' => 'bjlFcFCvhQ6TJUc9uGmECd1cd6aHFyJ-',
