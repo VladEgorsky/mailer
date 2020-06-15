@@ -35,7 +35,7 @@ $pagerSettings = [
 
         <div class="pull-right">
         <?= Html::a('Создать сообщение &nbsp; <i class="fa fa-envelope-open-o" aria-hidden="true"></i>',
-            Url::to(['mailbox/compose']), ['class' => 'btn btn-sm btn-default']) ?>
+            Url::to(['mailbox/compose']), ['class' => 'btn btn-sm btn-default', 'target' => '_blank']) ?>
         <?= Html::a('Перейти в другой ящик &nbsp; <i class="fa fa-sign-out" aria-hidden="true"></i>',
             Url::to(['site/logout']), ['class' => 'btn btn-sm btn-default']) ?>
         </div>

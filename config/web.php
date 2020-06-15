@@ -30,10 +30,9 @@ $config = [
         ],
         'mailer' => [
             'class' => 'app\components\Mailer',
-            // send all mails to a file by default. You have to set
-            // 'useFileTransport' to false and configure a transport
-            // for the mailer to send real emails.
             'useFileTransport' => YII_DEBUG,
+            // Настройка массива transport выполняется в классе
+            // models/MessageForm непосредственно перед отправкой сообщений
         ],
         'log' => [
             'traceLevel' => YII_DEBUG ? 3 : 0,
@@ -44,7 +43,7 @@ $config = [
                 ],
             ],
         ],
-        'db' => $db,
+        // 'db' => $db,
         'urlManager' => [
             'enablePrettyUrl' => true,
             'showScriptName' => false,

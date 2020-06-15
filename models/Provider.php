@@ -19,18 +19,21 @@ class Provider extends Model
             'id' => self::GMAIL_COM,
             'name' => 'Gmail.com',
             'server' => 'gmail.com',
+            'smtpServer' => 'smtp.gmail.com',
             'imapServer' => '{imap.gmail.com:993/imap/ssl/novalidate-cert}',
         ],
         self::MAIL_RU => [
             'id' => self::MAIL_RU,
             'name' => 'Mail.ru',
             'server' => 'mail.ru',
+            'smtpServer' => 'smtp.mail.ru',
             'imapServer' => '{imap.mail.ru:993/imap/ssl}',
         ],
         self::YANDEX_RU => [
             'id' => self::YANDEX_RU,
             'name' => 'Yandex.ru',
             'server' => 'yandex.ru',
+            'smtpServer' => 'smtp.yandex.ru',
             'imapServer' => '{imap.yandex.ru:993/imap/ssl}',
         ],
     ];
@@ -80,6 +83,15 @@ class Provider extends Model
     public static function getServer(int $id): string
     {
         return self::LIST[$id]['server'] ?? '#N/A';
+    }
+
+    /**
+     * @param int $id
+     * @return string
+     */
+    public static function getSmtpServer(int $id): string
+    {
+        return self::LIST[$id]['smtpServer'] ?? '#N/A';
     }
 
     /**

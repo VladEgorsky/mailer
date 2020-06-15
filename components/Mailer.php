@@ -57,7 +57,7 @@ class Mailer extends \yii\swiftmailer\Mailer
 
     /**
      * Здесь хранятся данные для функции imap_open
-     * imapServer, email, password
+     * smtpServer, imapServer, email, password
      *
      * @var \StdClass
      */
@@ -245,6 +245,8 @@ class Mailer extends \yii\swiftmailer\Mailer
             $attachments = $data->getAttachments();
 
             $dir = $this->getAttachmentsDir($id);
+            array_map('unlink', glob($dir . DIRECTORY_SEPARATOR . '*.*'));
+
             foreach ($attachments as $attachment) {
                 $attachment->setFilePath($dir . DIRECTORY_SEPARATOR . $attachment->name);
                 $attachment->saveToDisk();
@@ -271,6 +273,27 @@ class Mailer extends \yii\swiftmailer\Mailer
     {
         $dir = $this->getAttachmentsDir($messageId, $email);
         return glob($dir . DIRECTORY_SEPARATOR . '*.*');
+    }
+
+    /**
+     * Возвращаем реквизиты нового сообщения в виде массива.
+     * Если задан $id - [from, to, subject],
+     * если нет - только [from]
+     *
+     * @param int|null $id
+     * @return array
+     */
+    public function getRequizitesForNewMessage(int $id = null): array
+    {
+        $arr = [];
+        $arr['from'] = $this->getCredentials()->email;
+
+        if ($id && $data = $this->getMailboxData($id)) {
+            $arr['to'] = $data['from'] ?? null;
+            $arr['subject'] = 'Re: ' . $data['subject'] ?? null;
+        }
+
+        return $arr;
     }
 
     /*******************************************************************************

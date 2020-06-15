@@ -46,7 +46,7 @@ $attachedFiles = Yii::$app->mailer->getAttachedFiles($messageData['uid']);
                             <?php
                                 $url = str_replace(Yii::getAlias('@webroot'), '', $file);
                                 $text = '<i class="fa fa-paperclip"></i> &nbsp; ' . urlencode(basename($file));
-                                echo Html::a($text, $url, ['class' => 'mailbox-attachment-name'])
+                                echo Html::a($text, $url, ['class' => 'mailbox-attachment-name', 'target' => '_blank'])
                             ?>
 
                             <span class="mailbox-attachment-size">

@@ -2,10 +2,13 @@
 
 namespace app\controllers;
 
+use app\models\MessageForm;
 use Yii;
 use yii\data\ArrayDataProvider;
 use yii\filters\AccessControl;
+use yii\web\BadRequestHttpException;
 use yii\web\Controller;
+use yii\web\UploadedFile;
 
 /**
  * Class MailboxController
@@ -76,12 +79,42 @@ class MailboxController extends Controller
      * Иначе создаем новое пустое сообщение с пустым заголовками To & Subject
      *
      * @param int|null $id
-     * @return string
+     * @return array|string|string[]
+     * @throws BadRequestHttpException
      */
     public function actionCompose(int $id = null)
     {
+        $requiz = Yii::$app->mailer->getRequizitesForNewMessage($id);
+        $model = new MessageForm($requiz);
+        $isAjax = Yii::$app->request->isAjax;
+        $ajaxResponse = ['result' => 'ok'];
 
+        // В болоке ниже обрабатывается только Ajax-запрос
+        if ($model->load(Yii::$app->request->post())) {
+            if (!$isAjax) {
+                throw new BadRequestHttpException('Метод поддерживает только ajax-запрос');
+            }
 
-        return $this->render('compose');
+            try {
+                $model->files = UploadedFile::getInstances($model, 'files');
+
+                if (!$model->validate()) {
+                    $ajaxResponse = ['result' => 'err', 'message' => $model->getFirstError(key($model->errors))];
+                }
+                elseif (!$model->send()) {
+                    $ajaxResponse = ['result' => 'err', 'message' => 'Ошибка при отправлении почты'];
+                }
+            }
+            catch (\Exception $e) {
+                $ajaxResponse = ['result' => 'err', 'message' => $e->getMessage()];
+            }
+        }
+
+        if ($isAjax) {
+            Yii::$app->response->format = yii\web\Response::FORMAT_JSON;
+            return $ajaxResponse;
+        }
+
+        return $this->render('compose', ['model' => $model]);
     }
 }

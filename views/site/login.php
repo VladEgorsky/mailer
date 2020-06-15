@@ -52,7 +52,6 @@ $fieldOptions3 = [
         </div>
 
         <?php ActiveForm::end(); ?>
-
     </div>
     <!-- /.login-box-body -->
 </div><!-- /.login-box -->

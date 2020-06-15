@@ -29,7 +29,7 @@ class LoginForm extends Model
             [['email', 'password'], 'string'],
             [['email', 'password'], 'trim'],
             ['email', 'email'],
-            ['password', 'validateCredentials'],
+            ['password', 'validateCredentials', 'skipOnError' => true],
         ];
     }
 
@@ -51,9 +51,15 @@ class LoginForm extends Model
      */
     public function validateCredentials()
     {
+        // Для проверки Credentials все атриьбуты должны быть валидными
+        if ($this->hasErrors()) {
+            return false;
+        }
+
         /** @var Mailer $mailer */
         $mailer = Yii::$app->mailer;
         $credentials = (object) [
+            'smtpServer' => Provider::getSmtpServer($this->providerId),
             'imapServer' => Provider::getImapServer($this->providerId),
             'email' => $this->email,
             'password' => $this->password,
