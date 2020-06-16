@@ -30,7 +30,7 @@ $config = [
         ],
         'mailer' => [
             'class' => 'app\components\Mailer',
-            'useFileTransport' => YII_DEBUG,
+            'useFileTransport' => false,
             // Настройка массива transport выполняется в классе
             // models/MessageForm непосредственно перед отправкой сообщений
         ],

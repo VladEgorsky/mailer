@@ -5,7 +5,6 @@ namespace app\models;
 use app\components\Mailer;
 use Yii;
 use yii\base\Model;
-use yii\web\UploadedFile;
 
 class MessageForm extends Model
 {
