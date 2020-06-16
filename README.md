@@ -3,6 +3,7 @@
 На вакансию Middle PHP-разработчик (Yii2)
 
 **Почтовый клиент на Yii2 для работы с почтой через Gmail или Yandex** 
+
 [https://github.com/bmbullet/webdev-test-tasks/blob/master/middle/web-dev-php-middle-005.md](https://github.com/bmbullet/webdev-test-tasks/blob/master/middle/web-dev-php-middle-005.md)
 
 Использованы расширения:
