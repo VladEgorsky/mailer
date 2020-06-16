@@ -7,7 +7,9 @@
 [https://github.com/bmbullet/webdev-test-tasks/blob/master/middle/web-dev-php-middle-005.md](https://github.com/bmbullet/webdev-test-tasks/blob/master/middle/web-dev-php-middle-005.md)
 
 Использованы расширения:
+
 "php-imap/php-imap" - [https://github.com/barbushin/php-imap](https://github.com/barbushin/php-imap)
+
 
 ## Основной компонент: app\components\Mailer.php
 Расширяет компонент yii\swiftmailer\Mailer и назначается как компонент приложения Yii::$app->mailer (удобно использовать как хранилище для глобальных переменных).
